@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rockola del Corazón 💖 Amor y Amistad</title>
+    
+    <!-- Tailwind CSS para el diseño rápido y responsivo -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome para los iconos -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Three.js para el fondo 3D inmersivo -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <style>
+        /* Fuentes románticas y modernas */
+        @import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&family=Outfit:wght@300;400;500;600&display=swap');
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 50%, #fbc2eb 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            color: #2d3748;
+            margin: 0;
+        }
+
+        .romantic-font {
+            font-family: 'Dancing Script', cursive;
+        }
+
+        /* Contenedor del Lienzo 3D - Fondo Permanente */
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        /* Contenido Principal con z-index para estar sobre el 3D */
+        #main-content {
+            position: relative;
+            z-index: 10;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Efecto Glassmorphism Refinado */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            box-shadow: 0 10px 40px 0 rgba(255, 105, 135, 0.15);
+        }
+
+        /* Animación de texto de neón para el título */
+        .neon-glow {
+            text-shadow: 0 0 10px rgba(255, 71, 102, 0.3), 
+                         0 0 20px rgba(255, 71, 102, 0.2), 
+                         0 0 30px rgba(255, 71, 102, 0.1);
+            animation: pulse-glow 3s infinite alternate;
+        }
+        @keyframes pulse-glow {
+            0% { text-shadow: 0 0 10px rgba(255, 71, 102, 0.3); transform: scale(1); }
+            100% { text-shadow: 0 0 15px rgba(255, 71, 102, 0.5), 0 0 25px rgba(255, 71, 102, 0.3); transform: scale(1.02); }
+        }
+
+        /* Personalización de la barra de desplazamiento */
+        .custom-scroll::-webkit-scrollbar { width: 6px; }
+        .custom-scroll::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.4); border-radius: 10px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: rgba(255, 117, 140, 0.7); border-radius: 10px; }
+        .custom-scroll::-webkit-scrollbar-thumb:hover { background: rgba(255, 71, 102, 0.9); }
+        
+        /* Scrollbar de la pagina entera (más creativa) */
+        ::-webkit-scrollbar {
+            width: 12px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #ffe3e8; 
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(to bottom, #ff9a9e, #fbc2eb);
+            border-radius: 10px;
+            border: 2px solid #ffe3e8;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(to bottom, #ff758c, #ff4766);
+        }
+
+        /* Indicador de ecualizador animado */
+        .playing-indicator { display: none; width: 16px; height: 16px; position: relative; gap: 2px; }
+        .playing-indicator.active { display: flex; align-items: flex-end; justify-content: center; }
+        .bar { width: 3px; background-color: #ff4766; animation: bounce 0.9s infinite alternate; border-radius: 2px; }
+        .bar:nth-child(2) { animation-delay: 0.3s; }
+        .bar:nth-child(3) { animation-delay: 0.6s; }
+        @keyframes bounce { 0% { height: 3px; } 100% { height: 16px; } }
+
+        /* Estilos de los items de la lista */
+        .song-item { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .song-item:hover { transform: translateX(8px) scale(1.01); background: rgba(255,255,255,0.95); box-shadow: 0 4px 15px rgba(255, 105, 135, 0.1); }
+        .song-item.active-song { background: #fff0f3; border-left: 5px solid #ff4766; box-shadow: 0 4px 20px rgba(255, 71, 102, 0.15); }
+        
+        /* Contenedor del video/audio responsivo */
+        .video-container {
+            position: relative;
+            padding-bottom: 56.25%; /* 16:9 ratio */
+            height: 0;
+            overflow: hidden;
+            border-radius: 1.25rem;
+            box-shadow: 0 10px 25px -5px rgba(255, 105, 135, 0.3);
+            background: #000;
+        }
+        .video-container iframe, .video-container #audio-visualizer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; }
+        
+        /* Efecto de botones */
+        .btn-action { transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        .btn-action:active { transform: scale(0.9); }
+        .btn-action:hover { transform: scale(1.1); }
+        
+        /* Animación de entrada para la lista */
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-slide-in { animation: slideIn 0.4s ease-out forwards; }
+        
+        /* Animación para el vinilo del reproductor de audio */
+        .spin-slow { animation: spin 4s linear infinite; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="antialiased selection:bg-pink-300 selection:text-pink-900">
+
+    <!-- Fondo 3D interactivo -->
+    <div id="canvas-container"></div>
+
+    <main id="main-content" class="container mx-auto px-4 py-8 flex flex-col gap-8 max-w-7xl">
+        
+        <!-- Cabecera -->
+        <header class="w-full text-center glass-panel rounded-[2rem] p-8 md:p-12 relative z-10">
+            <div class="absolute -top-6 -left-6 text-6xl opacity-20">✨</div>
+            <div class="absolute -bottom-4 -right-4 text-5xl opacity-20">💖</div>
+            
+            <h1 class="text-5xl md:text-6xl text-rose-600 mb-6 romantic-font font-bold neon-glow inline-block">
+                Rockola del Corazón UCN
+            </h1>
+            
+            <h2 class="text-xl md:text-2xl text-gray-800 font-medium mb-4">
+                La música es el lenguaje universal del alma.
+            </h2>
+            
+            <p class="text-base md:text-lg text-gray-700 max-w-4xl mx-auto leading-relaxed font-light">
+                En este mes del <strong>Amor y la Amistad</strong>, hemos preparado un espacio donde las melodías se convierten en abrazos, los recuerdos reviven y los <em>"te quiero"</em> suenan más fuerte. La distancia no existe cuando compartimos una canción. Explora nuestro repertorio, encuentra esa letra que parece escrita para esa persona especial y envíale una dedicatoria sorpresa. 
+                <br><span class="mt-3 block text-rose-500 font-medium">¡Que viva el amor, la lealtad y la buena música! 🎵❤️</span>
+            </p>
+        </header>
+
+        <div class="flex flex-col lg:flex-row gap-8 w-full">
+            
+            <!-- PANEL IZQUIERDO: Reproductor Multimedia -->
+            <div class="w-full lg:w-[45%] flex flex-col gap-6">
+                <div class="glass-panel rounded-[2rem] p-6 md:p-8 flex-grow flex flex-col justify-center sticky top-6">
+                    
+                    <!-- Info de la canción activa -->
+                    <div id="current-song-info" class="text-center mb-6 h-20 flex flex-col justify-end transition-opacity duration-300 opacity-0">
+                        <h2 id="now-playing-title" class="text-3xl md:text-4xl text-rose-600 mb-1 romantic-font font-bold line-clamp-1">Esperando Canción...</h2>
+                        <p id="now-playing-artist" class="text-gray-500 font-medium text-sm md:text-base tracking-wide uppercase">Selecciona un tema</p>
+                    </div>
+                    
+                    <!-- Marco del Reproductor -->
+                    <div class="video-container border-4 border-white/50 relative group">
+                        
+                        <!-- PANTALLA DE ERROR NUEVA (Cuando YouTube bloquea el video) -->
+                        <div id="error-overlay" class="absolute inset-0 flex-col items-center justify-center bg-gray-900/95 backdrop-blur-md z-20 hidden text-white text-center px-4 transition-opacity duration-300">
+                            <i class="fas fa-video-slash text-5xl text-rose-500 mb-3 animate-pulse"></i>
+                            <h3 class="text-2xl romantic-font font-bold text-rose-300 mb-1">Bloqueado por YouTube</h3>
+                            <p class="text-xs md:text-sm text-gray-300 mb-5 max-w-xs">Por derechos de autor de la disquera, debes ver esta versión directamente allá.</p>
+                            <div class="flex flex-col sm:flex-row gap-3">
+                                <a id="btn-error-yt" href="#" target="_blank" class="px-5 py-2.5 bg-white text-gray-900 rounded-full text-sm font-semibold hover:bg-gray-200 transition shadow-lg flex items-center justify-center">
+                                    <i class="fab fa-youtube text-red-600 mr-2 text-lg"></i>Ver en YouTube
+                                </a>
+                                <button onclick="playNextSong()" class="px-5 py-2.5 bg-rose-600 text-white rounded-full text-sm font-semibold hover:bg-rose-700 transition shadow-lg shadow-rose-600/30 flex items-center justify-center">
+                                    Siguiente <i class="fas fa-forward-step ml-2"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Pantalla de espera inicial (Placeholder) -->
+                        <div id="placeholder-content" class="absolute inset-0 flex flex-col items-center justify-center text-rose-400 bg-gradient-to-br from-white/90 to-pink-50/90 backdrop-blur-md z-10 transition-opacity duration-500">
+                            <div class="w-24 h-24 bg-rose-100 rounded-full flex items-center justify-center mb-4 shadow-inner shadow-rose-200">
+                                <i class="fas fa-compact-disc text-5xl animate-[spin_4s_linear_infinite]"></i>
+                            </div>
+                            <p class="text-2xl romantic-font font-bold text-rose-500">Inserta tu "moneda"</p>
+                            <p class="text-sm text-gray-500 mt-2">Elige una canción de la lista 👉</p>
+                        </div>
+                        
+                        <!-- VISUALIZADOR PARA AUDIOS MP3 NATIVOS -->
+                        <div id="audio-visualizer" class="absolute inset-0 flex-col items-center justify-center bg-gradient-to-br from-gray-900 to-black z-10 hidden">
+                            <div id="vinyl-record" class="relative w-32 h-32 md:w-40 md:h-40 rounded-full border-[6px] border-gray-800 shadow-[0_0_40px_rgba(255,71,102,0.5)] flex items-center justify-center bg-black overflow-hidden transition-transform duration-500">
+                                 <!-- Surcos del vinilo -->
+                                 <div class="absolute inset-0 rounded-full border border-gray-800 m-2"></div>
+                                 <div class="absolute inset-0 rounded-full border border-gray-800 m-4"></div>
+                                 <div class="absolute inset-0 rounded-full border border-gray-800 m-6"></div>
+                                 <div class="absolute inset-0 rounded-full border border-gray-800 m-8"></div>
+                                 <!-- Etiqueta central -->
+                                 <div class="w-12 h-12 bg-rose-500 rounded-full z-10 border-2 border-white flex items-center justify-center">
+                                     <div class="w-2 h-2 bg-black rounded-full"></div>
+                                 </div>
+                            </div>
+                            <p class="text-rose-400 mt-6 font-medium tracking-widest uppercase text-xs animate-pulse">Reproduciendo Audio HD</p>
+                        </div>
+
+                        <!-- Contenedor real de YouTube -->
+                        <div id="player" class="z-0"></div>
+                    </div>
+                    
+                    <!-- Fallback link por si YouTube bloquea la inserción (debajo del video) -->
+                    <div class="mt-4 text-center h-6">
+                        <a id="btn-open-yt" href="#" target="_blank" class="hidden text-sm text-rose-500 hover:text-rose-700 underline decoration-dotted transition-all font-medium">
+                            <i class="fab fa-youtube mr-1"></i>¿No se reproduce aquí? Ábrela directo en YouTube
+                        </a>
+                    </div>
+
+                    <!-- Controles de Reproducción -->
+                    <div class="flex justify-center items-center gap-6 mt-4">
+                        <button id="btn-shuffle" class="btn-action text-gray-400 hover:text-rose-500 text-xl" title="Reproducción Aleatoria">
+                            <i class="fas fa-random"></i>
+                        </button>
+                        <button id="btn-prev" class="btn-action text-rose-500 hover:text-rose-700 text-3xl" title="Anterior">
+                            <i class="fas fa-backward-step"></i>
+                        </button>
+                        <button id="btn-play-pause" class="btn-action bg-gradient-to-br from-rose-400 to-pink-600 hover:from-rose-500 hover:to-pink-700 text-white rounded-full w-20 h-20 flex items-center justify-center text-3xl shadow-xl shadow-rose-500/40 border-4 border-white">
+                            <i class="fas fa-play ml-1" id="play-icon"></i>
+                        </button>
+                        <button id="btn-next" class="btn-action text-rose-500 hover:text-rose-700 text-3xl" title="Siguiente">
+                            <i class="fas fa-forward-step"></i>
+                        </button>
+                        <button id="btn-loop" class="btn-action text-gray-400 hover:text-rose-500 text-xl" title="Repetir">
+                            <i class="fas fa-repeat"></i>
+                        </button>
+                    </div>
+
+                    <!-- Botón de Compartir -->
+                    <div class="mt-8 flex justify-center">
+                        <button id="btn-share" class="opacity-0 pointer-events-none transform translate-y-4 transition-all duration-500 w-full px-6 py-4 bg-gradient-to-r from-[#25D366] to-[#1DA851] hover:from-[#20bd5a] hover:to-[#199446] text-white font-bold rounded-2xl shadow-lg shadow-green-500/30 flex items-center justify-center gap-3 text-lg group">
+                            <i class="fab fa-whatsapp text-2xl group-hover:scale-110 transition-transform"></i> 
+                            Dedicar por WhatsApp
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PANEL DERECHO: Catálogo Musical -->
+            <div class="w-full lg:w-[55%] glass-panel rounded-[2rem] p-6 md:p-8 flex flex-col h-[700px] lg:h-[800px]">
+                
+                <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4 border-b border-pink-200/60 pb-4">
+                    <h2 class="text-4xl text-rose-600 romantic-font font-bold flex items-center">
+                        <i class="fas fa-record-vinyl mr-3 animate-[spin_10s_linear_infinite]"></i>
+                        Repertorio <span id="song-count" class="text-xl ml-2 text-rose-400 bg-rose-50 px-3 py-1 rounded-full">(50)</span>
+                    </h2>
+                    
+                    <!-- Buscador -->
+                    <div class="relative w-full md:w-64">
+                        <input type="text" id="search-input" placeholder="Buscar canción..." class="w-full pl-10 pr-4 py-2 rounded-full border border-pink-200 focus:outline-none focus:border-rose-400 focus:ring-2 focus:ring-rose-200 bg-white/80 transition-all">
+                        <i class="fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-pink-300"></i>
+                    </div>
+                </div>
+                
+                <!-- Categorías (Filtros) -->
+                <div class="flex flex-wrap gap-2 mb-6" id="filter-container">
+                    <button class="filter-btn active px-4 md:px-5 py-2 md:py-2.5 rounded-full text-xs md:text-sm font-semibold bg-rose-500 text-white shadow-md transition-all" data-filter="all">Todas 🎶</button>
+                    <button class="filter-btn px-4 md:px-5 py-2 md:py-2.5 rounded-full text-xs md:text-sm font-semibold bg-white/80 text-gray-600 hover:bg-rose-50 hover:text-rose-600 border border-pink-100 transition-all" data-filter="amor">Amor 💌</button>
+                    <button class="filter-btn px-4 md:px-5 py-2 md:py-2.5 rounded-full text-xs md:text-sm font-semibold bg-white/80 text-gray-600 hover:bg-rose-50 hover:text-rose-600 border border-pink-100 transition-all" data-filter="amistad">Amistad 🤝</button>
+                    <button class="filter-btn px-4 md:px-5 py-2 md:py-2.5 rounded-full text-xs md:text-sm font-semibold bg-white/80 text-gray-600 hover:bg-rose-50 hover:text-rose-600 border border-pink-100 transition-all" data-filter="romanticas">Románticas 💘</button>
+                    <button class="filter-btn px-4 md:px-5 py-2 md:py-2.5 rounded-full text-xs md:text-sm font-semibold bg-white/80 text-gray-600 hover:bg-rose-50 hover:text-rose-600 border border-pink-100 transition-all" data-filter="clasicos">Clásicos 📻</button>
+                    <button class="filter-btn px-4 md:px-5 py-2 md:py-2.5 rounded-full text-xs md:text-sm font-semibold bg-white/80 text-gray-600 hover:bg-rose-50 hover:text-rose-600 border border-pink-100 transition-all" data-filter="bailable">Bailable 💃</button>
+                </div>
+
+                <!-- Lista de Reproducción (Scrollable) -->
+                <div class="custom-scroll overflow-y-auto pr-3 space-y-3 flex-grow" id="playlist-container">
+                    <!-- Javascript inyectará las canciones aquí -->
+                </div>
+                
+                <!-- Mensaje de estado cuando no hay resultados de búsqueda -->
+                <div id="no-results" class="hidden flex-col items-center justify-center h-full text-gray-400">
+                    <i class="far fa-face-frown-open text-5xl mb-3"></i>
+                    <p class="text-lg">No encontramos esa canción.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="w-full text-center mt-8 p-4 glass-panel rounded-2xl relative z-10">
+            <p class="text-rose-600 font-medium text-sm md:text-base">
+                Realizado por Pastoral y Bienestar Institucional - Fundación Universitaria Católica del Norte ❤️
+            </p>
+        </footer>
+    </main>
+
+    <!-- Script de YouTube iframe API -->
+    <script src="https://www.youtube.com/iframe_api"></script>
+
+    <script>
+        // --- BASE DE DATOS AMPLIADA Y MEJORADA ---
+        // AHORA SOPORTA DOS TIPOS DE ARCHIVOS PARA EVITAR BLOQUEOS:
+        // 1. YouTube IDs (ytId): Usamos preferiblemente versiones "(Video Letra)" ya que no los bloquean.
+        // 2. Audio Directo (audioUrl): Si tienes un enlace .mp3 directo de tu servidor, ponlo aquí y se 
+        //    reproducirá usando el reproductor web interno sin depender de YouTube.
+        
+        const songs = [
+            // AMOR (Hemos cambiado los títulos y IDs problemáticos por versiones "Letra" o "Audio")
+            { id: "1", title: "Robarte un Beso (Video Letra)", artist: "Carlos Vives, Sebastián Yatra", ytId: "c7eP6X8T8Xw", category: "amor" },
+            { id: "2", title: "Por Primera Vez (Audio Oficial)", artist: "Camilo, Evaluna", audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3", category: "amor" }, // EJEMPLO DE USO DE AUDIO MP3 (Reemplaza la URL por la tuya)
+            { id: "3", title: "Entra en mi vida (Video Letra)", artist: "Sin Bandera", ytId: "9oG-hFf8n6g", category: "amor" }, // Cambiado a versión letra
+            { id: "4", title: "Solamente Tú (Audio Oficial)", artist: "Pablo Alborán", audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3", category: "amor" }, // EJEMPLO AUDIO
+            { id: "5", title: "Colgando en tus manos (Video Letra)", artist: "Carlos Baute, Marta Sánchez", ytId: "Flj6SwkUqvQ", category: "amor" },
+            { id: "6", title: "Te Amo (Video Letra)", artist: "Franco De Vita", ytId: "o5P_R1bXnko", category: "amor" },
+            { id: "31", title: "Ocean (Video Letra)", artist: "Karol G", ytId: "wmox3Sxn8BU", category: "amor" }, 
+            { id: "32", title: "Tutu (Video Letra)", artist: "Camilo, Pedro Capó", ytId: "X_xENHe-GJA", category: "amor" },
+            { id: "33", title: "Te Esperaba (Video Letra)", artist: "Carlos Rivera", ytId: "5_zV9f0yMFE", category: "amor" },
+            { id: "34", title: "Perfecta (Video Letra)", artist: "Reik, Maluma", ytId: "3q98d9J7B3Q", category: "amor" },
+            { id: "35", title: "Amor del Bueno (Audio)", artist: "Reyli Barba", ytId: "U3dZf1wX5Cg", category: "amor" },
+            { id: "36", title: "Me Cambiaste La Vida (Video Letra)", artist: "Río Roma", ytId: "j6f2_tL2Z3E", category: "amor" },
+            
+            // AMISTAD
+            { id: "7", title: "Amigos (Video Letra)", artist: "Enanitos Verdes", ytId: "u0O_tKq-Ziw", category: "amistad" },
+            { id: "8", title: "Nadie Como Tú (Video Letra)", artist: "La Oreja de Van Gogh", ytId: "Tq_4QoV6Cqw", category: "amistad" },
+            { id: "9", title: "Celebra la Vida (Video Letra)", artist: "Axel", ytId: "x6-rF_2A6Ew", category: "amistad" },
+            { id: "10", title: "Un millón de amigos (Audio)", artist: "Roberto Carlos", ytId: "rVf0e6-xU84", category: "amistad" },
+            { id: "11", title: "Yo soy tu amigo fiel (Video Letra)", artist: "Aleks Syntek", ytId: "n1w9E_hD3lI", category: "amistad" },
+            { id: "12", title: "Color Esperanza (Video Letra)", artist: "Diego Torres", ytId: "w_iA8E-XjFw", category: "amistad" },
+            { id: "37", title: "A mis amigos (Video Letra)", artist: "Alberto Cortez", ytId: "ZpP3b7_9B_M", category: "amistad" },
+            { id: "38", title: "Que canten los niños (Video Letra)", artist: "José Luis Perales", ytId: "dZ9_5m4d0zQ", category: "amistad" },
+            { id: "39", title: "Hay un amigo en mi (Video Letra)", artist: "Toy Story", ytId: "q6h0yI1E-Xw", category: "amistad" },
+            { id: "40", title: "Son mis amigos (Video Letra)", artist: "Amaral", ytId: "D8eO9C2UaQc", category: "amistad" },
+
+            // ROMÁNTICAS
+            { id: "13", title: "Y cómo es él (Video Letra)", artist: "José Luis Perales", ytId: "v3w944-R2h8", category: "romanticas" },
+            { id: "14", title: "Vivir así es morir de amor (Video Letra)", artist: "Camilo Sesto", ytId: "Xn6gD9R6w3A", category: "romanticas" },
+            { id: "15", title: "Eres tú (Video Letra)", artist: "Mocedades", ytId: "c1r5Z-UfD3w", category: "romanticas" },
+            { id: "16", title: "El Amar y el Querer (Video Letra)", artist: "José José", ytId: "6v_U8-i4sUo", category: "romanticas" },
+            { id: "17", title: "Te amaré (Video Letra)", artist: "Miguel Bosé", ytId: "3X1K_Xz5XvU", category: "romanticas" },
+            { id: "18", title: "Chiquitita (Video Letra)", artist: "ABBA", ytId: "-7_MIFW5J9k", category: "romanticas" },
+            { id: "41", title: "Hasta que me olvides (Video Letra)", artist: "Luis Miguel", ytId: "g9qJ6z4k9Vw", category: "romanticas" },
+            { id: "42", title: "Como yo te amo (Video Letra)", artist: "Raphael", ytId: "4RzH8E_pD0g", category: "romanticas" },
+            { id: "43", title: "Tan Enamorados (Video Letra)", artist: "Ricardo Montaner", ytId: "4Jk-rQZ_zHw", category: "romanticas" },
+            { id: "44", title: "Dejaría Todo (Video Letra)", artist: "Chayanne", ytId: "T9zXvT5mYkU", category: "romanticas" },
+
+            // CLÁSICOS
+            { id: "19", title: "Bésame Mucho (Video Letra)", artist: "Luis Miguel", ytId: "Rym2zZ-jGGE", category: "clasicos" },
+            { id: "20", title: "Amor Eterno (Video Letra)", artist: "Juan Gabriel", ytId: "Y5v9n-7xLGE", category: "clasicos" },
+            { id: "21", title: "Querida (Video Letra)", artist: "Juan Gabriel", ytId: "aEB-F6Q_Y70", category: "clasicos" },
+            { id: "22", title: "Burbujas de Amor (Video Letra)", artist: "Juan Luis Guerra", ytId: "rO-nN421F38", category: "clasicos" },
+            { id: "23", title: "La Incondicional (Video Letra)", artist: "Luis Miguel", ytId: "c-OONyC1x_c", category: "clasicos" },
+            { id: "24", title: "Sabor a mi (Video Letra)", artist: "Eydie Gormé & Los Panchos", ytId: "aC1V00I0RGE", category: "clasicos" },
+            { id: "45", title: "El Reloj (Video Letra)", artist: "Lucho Gatica", ytId: "tV1cO4j9k_Y", category: "clasicos" },
+            { id: "46", title: "Contigo Aprendí (Video Letra)", artist: "Armando Manzanero", ytId: "1W5h0y99gM8", category: "clasicos" },
+            { id: "47", title: "Si Nos Dejan (Video Letra)", artist: "José Alfredo Jiménez", ytId: "vD0l_z346pQ", category: "clasicos" },
+
+            // BAILABLE
+            { id: "25", title: "Volví a Nacer (Video Letra)", artist: "Carlos Vives", ytId: "d39T18n383g", category: "bailable" },
+            { id: "26", title: "Me Enamoré (Video Letra)", artist: "Shakira", ytId: "sPTn0QEhxds", category: "bailable" },
+            { id: "27", title: "Cásate Conmigo (Video Letra)", artist: "Silvestre Dangond", ytId: "6a-XN34gP50", category: "bailable" },
+            { id: "28", title: "Bailando (Video Letra)", artist: "Enrique Iglesias", ytId: "NUsoVlDFqZg", category: "bailable" },
+            { id: "29", title: "La Gozadera (Video Letra)", artist: "Gente de Zona", ytId: "O7L8FmEQ9Gg", category: "bailable" },
+            { id: "30", title: "Vivir Mi Vida (Video Letra)", artist: "Marc Anthony", ytId: "YXnjy5YlDwk", category: "bailable" },
+            { id: "48", title: "Danza Kuduro (Video Letra)", artist: "Don Omar", ytId: "7zp1TbIGHLw", category: "bailable" },
+            { id: "49", title: "Suavemente (Video Letra)", artist: "Elvis Crespo", ytId: "WPIgWE-NuxA", category: "bailable" },
+            { id: "50", title: "Mi Niña Bonita (Video Letra)", artist: "Chino y Nacho", ytId: "O9-hE0P4e-8", category: "bailable" }
+        ];
+
+        // Variables de estado
+        let player;
+        const html5Audio = new Audio(); // Nuevo reproductor de audio interno
+        let currentMode = 'youtube'; // Puede ser 'youtube' o 'audio'
+        let currentSongIndex = -1;
+        let isPlaying = false;
+        let isShuffle = false;
+        let isLooping = false;
+        let currentFilter = 'all';
+        let searchQuery = '';
+
+        // Elementos del DOM
+        const playlistContainer = document.getElementById('playlist-container');
+        const playIcon = document.getElementById('play-icon');
+        const btnPlayPause = document.getElementById('btn-play-pause');
+        const btnNext = document.getElementById('btn-next');
+        const btnPrev = document.getElementById('btn-prev');
+        const btnShuffle = document.getElementById('btn-shuffle');
+        const btnLoop = document.getElementById('btn-loop');
+        const placeholderContent = document.getElementById('placeholder-content');
+        const currentSongInfo = document.getElementById('current-song-info');
+        const nowPlayingTitle = document.getElementById('now-playing-title');
+        const nowPlayingArtist = document.getElementById('now-playing-artist');
+        const filterBtns = document.querySelectorAll('.filter-btn');
+        const btnShare = document.getElementById('btn-share');
+        const btnOpenYt = document.getElementById('btn-open-yt');
+        const searchInput = document.getElementById('search-input');
+        const noResultsMsg = document.getElementById('no-results');
+        const songCountEl = document.getElementById('song-count');
+        
+        // Elementos de Error y Audio UI
+        const errorOverlay = document.getElementById('error-overlay');
+        const btnErrorYt = document.getElementById('btn-error-yt');
+        const audioVisualizer = document.getElementById('audio-visualizer');
+        const vinylRecord = document.getElementById('vinyl-record');
+
+        // --- INICIALIZACIÓN DE YOUTUBE ---
+        function onYouTubeIframeAPIReady() {
+            player = new YT.Player('player', {
+                height: '100%',
+                width: '100%',
+                videoId: '',
+                playerVars: { 
+                    'playsinline': 1, 
+                    'controls': 1, 
+                    'rel': 0, 
+                    'showinfo': 0,
+                    'iv_load_policy': 3,
+                    'modestbranding': 1
+                },
+                events: {
+                    'onStateChange': onPlayerStateChange,
+                    'onError': onPlayerError
+                }
+            });
+        }
+
+        // --- EVENTOS DEL REPRODUCTOR MP3 HTML5 ---
+        html5Audio.addEventListener('play', () => {
+            isPlaying = true;
+            vinylRecord.classList.add('spin-slow');
+            updatePlayPauseButton();
+            updatePlaylistUI();
+        });
+
+        html5Audio.addEventListener('pause', () => {
+            isPlaying = false;
+            vinylRecord.classList.remove('spin-slow');
+            updatePlayPauseButton();
+            updatePlaylistUI();
+        });
+
+        html5Audio.addEventListener('ended', () => {
+            isPlaying = false;
+            vinylRecord.classList.remove('spin-slow');
+            if (isLooping && currentSongIndex !== -1) {
+                playSong(currentSongIndex); 
+            } else {
+                playNextSong(); 
+            }
+        });
+        
+        html5Audio.addEventListener('error', () => {
+            console.error("Error al cargar el archivo MP3");
+            isPlaying = false;
+            updatePlayPauseButton();
+        });
+
+        // --- MANEJO DE ERRORES DE YOUTUBE ---
+        function onPlayerError(event) {
+            if(event.data === 150 || event.data === 101 || event.data === 100) {
+                errorOverlay.classList.remove('hidden');
+                errorOverlay.classList.add('flex');
+                
+                if (currentSongIndex !== -1) {
+                    btnErrorYt.href = `https://www.youtube.com/watch?v=${songs[currentSongIndex].ytId}`;
+                }
+
+                btnOpenYt.classList.add('animate-pulse', 'text-rose-700');
+                btnOpenYt.innerHTML = `<i class="fas fa-exclamation-circle mr-1"></i>Bloqueado por el autor. Ábrela en YouTube`;
+                
+                isPlaying = false;
+                updatePlayPauseButton();
+                updatePlaylistUI();
+            }
+        }
+
+        // --- MANEJO DE ESTADO DE YOUTUBE ---
+        function onPlayerStateChange(event) {
+            if (event.data == YT.PlayerState.PLAYING) {
+                errorOverlay.classList.add('hidden');
+                errorOverlay.classList.remove('flex');
+                
+                isPlaying = true; 
+                updatePlayPauseButton(); 
+                updatePlaylistUI();
+                
+                btnOpenYt.classList.remove('animate-pulse', 'text-rose-700');
+                btnOpenYt.innerHTML = `<i class="fab fa-youtube mr-1"></i>¿No se reproduce aquí? Ábrela directo en YouTube`;
+            } else if (event.data == YT.PlayerState.PAUSED) {
+                isPlaying = false; 
+                updatePlayPauseButton(); 
+                updatePlaylistUI();
+            } else if (event.data == YT.PlayerState.ENDED) {
+                isPlaying = false; 
+                if (isLooping && currentSongIndex !== -1) {
+                    playSong(currentSongIndex); 
+                } else {
+                    playNextSong(); 
+                }
+            }
+        }
+
+        function renderPlaylist() {
+            playlistContainer.innerHTML = '';
+            
+            let filteredSongs = songs;
+            
+            if (currentFilter !== 'all') {
+                filteredSongs = filteredSongs.filter(song => song.category === currentFilter);
+            }
+            
+            if (searchQuery.trim() !== '') {
+                const query = searchQuery.toLowerCase();
+                filteredSongs = filteredSongs.filter(song => 
+                    song.title.toLowerCase().includes(query) || 
+                    song.artist.toLowerCase().includes(query)
+                );
+            }
+
+            songCountEl.textContent = `(${filteredSongs.length})`;
+
+            if (filteredSongs.length === 0) {
+                noResultsMsg.classList.remove('hidden');
+                noResultsMsg.classList.add('flex');
+                return;
+            } else {
+                noResultsMsg.classList.add('hidden');
+                noResultsMsg.classList.remove('flex');
+            }
+
+            filteredSongs.forEach((song, i) => {
+                const globalIndex = songs.findIndex(s => s.id === song.id); 
+                const isActive = globalIndex === currentSongIndex;
+                
+                const songEl = document.createElement('div');
+                songEl.className = `song-item bg-white/70 backdrop-blur-md p-4 rounded-[1.25rem] cursor-pointer flex items-center border border-pink-50 animate-slide-in ${isActive ? 'active-song' : ''}`;
+                songEl.style.animationDelay = `${i * 0.05}s`;
+                songEl.onclick = () => playSong(globalIndex);
+
+                let icon = '💖';
+                if(song.category === 'amistad') icon = '🤝';
+                if(song.category === 'romanticas') icon = '💘';
+                if(song.category === 'clasicos') icon = '📻';
+                if(song.category === 'bailable') icon = '💃';
+                
+                // Icono extra si es MP3 directo
+                const isDirectAudio = song.audioUrl ? '<i class="fas fa-music text-xs ml-2 opacity-50" title="Audio MP3"></i>' : '';
+
+                songEl.innerHTML = `
+                    <div class="w-12 h-12 rounded-full ${isActive ? 'bg-rose-500 text-white' : 'bg-gradient-to-br from-pink-50 to-pink-100 text-rose-500'} flex items-center justify-center font-bold mr-4 shrink-0 shadow-inner transition-colors">
+                        ${isActive ? '<i class="fas fa-volume-up"></i>' : (globalIndex + 1)}
+                    </div>
+                    <div class="flex-grow min-w-0 pr-2">
+                        <h3 class="font-semibold ${isActive ? 'text-rose-700' : 'text-gray-800'} truncate text-[1.1rem]" title="${song.title}">${song.title}${isDirectAudio}</h3>
+                        <p class="text-sm ${isActive ? 'text-rose-500' : 'text-gray-500'} truncate font-medium mt-0.5" title="${song.artist}">${song.artist}</p>
+                    </div>
+                    <div class="flex items-center gap-3 shrink-0 ml-auto">
+                        <span class="text-2xl opacity-70 hover:opacity-100 transition-opacity" title="Categoría">${icon}</span>
+                        <div class="playing-indicator ${isActive && isPlaying ? 'active' : ''}">
+                            <div class="bar"></div><div class="bar"></div><div class="bar"></div>
+                        </div>
+                    </div>
+                `;
+                playlistContainer.appendChild(songEl);
+            });
+        }
+
+        function playSong(index) {
+            if (index < 0 || index >= songs.length) return;
+            currentSongIndex = index;
+            const song = songs[currentSongIndex];
+            
+            // 1. Limpiar la interfaz (Ocultar placeholders de espera)
+            placeholderContent.style.opacity = '0';
+            setTimeout(() => { placeholderContent.style.display = 'none'; }, 500);
+            errorOverlay.classList.add('hidden');
+            errorOverlay.classList.remove('flex');
+            
+            // 2. Mostrar la info del texto en la UI
+            currentSongInfo.classList.remove('opacity-0');
+            currentSongInfo.classList.add('opacity-100');
+            nowPlayingTitle.textContent = song.title;
+            nowPlayingArtist.textContent = song.artist;
+            
+            btnShare.classList.remove('opacity-0', 'pointer-events-none', 'translate-y-4');
+            btnShare.classList.add('opacity-100', 'translate-y-0');
+
+            // 3. Detener las reproducciones actuales previas (Sea de YouTube o del Audio)
+            if (player && player.getPlayerState && player.getPlayerState() === YT.PlayerState.PLAYING) {
+                player.pauseVideo();
+            }
+            html5Audio.pause();
+            html5Audio.currentTime = 0;
+
+            const ytPlayerEl = document.getElementById('player');
+
+            // 4. LÓGICA HÍBRIDA: ¿Es MP3 directo o es YouTube?
+            if (song.audioUrl) {
+                // MODO AUDIO DIRECTO (MP3)
+                currentMode = 'audio';
+                
+                // Cambiar visibilidad de los reproductores
+                ytPlayerEl.classList.add('hidden');
+                audioVisualizer.classList.remove('hidden');
+                audioVisualizer.classList.add('flex');
+                
+                // Ocultar botón de ir a YouTube porque es un MP3
+                btnOpenYt.classList.add('hidden');
+                
+                // Cargar y reproducir audio HTML5
+                html5Audio.src = song.audioUrl;
+                html5Audio.play().catch(e => {
+                    console.error("Autoplay bloqueado por el navegador", e);
+                    isPlaying = false;
+                    updatePlayPauseButton();
+                });
+
+            } else {
+                // MODO YOUTUBE
+                currentMode = 'youtube';
+                
+                // Cambiar visibilidad
+                audioVisualizer.classList.add('hidden');
+                audioVisualizer.classList.remove('flex');
+                ytPlayerEl.classList.remove('hidden');
+
+                // Configurar el botón de Fallback de YT
+                btnOpenYt.href = `https://www.youtube.com/watch?v=${song.ytId}`;
+                btnOpenYt.classList.remove('hidden');
+                btnOpenYt.classList.add('inline-block');
+                btnOpenYt.classList.remove('animate-pulse', 'text-rose-700');
+                btnOpenYt.innerHTML = `<i class="fab fa-youtube mr-1"></i>¿No se reproduce aquí? Ábrela directo en YouTube`;
+
+                // Cargar en el reproductor YT
+                if (player && player.loadVideoById) {
+                    player.loadVideoById(song.ytId);
+                }
+            }
+        }
+
+        function togglePlayPause() {
+            if (currentSongIndex === -1) { 
+                playSong(isShuffle ? Math.floor(Math.random() * songs.length) : 0); 
+                return; 
+            }
+
+            if (currentMode === 'audio') {
+                if (html5Audio.paused) {
+                    html5Audio.play();
+                } else {
+                    html5Audio.pause();
+                }
+            } else {
+                if (player && player.getPlayerState) {
+                    const state = player.getPlayerState();
+                    if (state === YT.PlayerState.PLAYING) player.pauseVideo();
+                    else player.playVideo();
+                }
+            }
+        }
+
+        window.playNextSong = function() {
+            if (songs.length === 0) return;
+            let nextIndex;
+            if (isShuffle) {
+                nextIndex = Math.floor(Math.random() * songs.length);
+                while (nextIndex === currentSongIndex && songs.length > 1) {
+                    nextIndex = Math.floor(Math.random() * songs.length);
+                }
+            } else {
+                nextIndex = currentSongIndex + 1;
+                if (nextIndex >= songs.length) nextIndex = 0;
+            }
+            playSong(nextIndex);
+        }
+
+        function playPrevSong() {
+            if (songs.length === 0) return;
+            let prevIndex = currentSongIndex - 1;
+            if (prevIndex < 0) prevIndex = songs.length - 1;
+            playSong(prevIndex);
+        }
+
+        function toggleShuffle() {
+            isShuffle = !isShuffle;
+            btnShuffle.classList.toggle('text-gray-400');
+            btnShuffle.classList.toggle('text-rose-500');
+            btnShuffle.classList.toggle('scale-110');
+        }
+
+        function toggleLoop() {
+            isLooping = !isLooping;
+            btnLoop.classList.toggle('text-gray-400');
+            btnLoop.classList.toggle('text-rose-500');
+            btnLoop.classList.toggle('scale-110');
+        }
+
+        function updatePlayPauseButton() {
+            if (isPlaying) {
+                playIcon.classList.remove('fa-play', 'ml-1'); 
+                playIcon.classList.add('fa-pause');
+            } else {
+                playIcon.classList.remove('fa-pause'); 
+                playIcon.classList.add('fa-play', 'ml-1');
+            }
+        }
+
+        function updatePlaylistUI() {
+            renderPlaylist();
+            if (currentSongIndex !== -1) {
+                const activeSong = songs[currentSongIndex];
+                if ((currentFilter === 'all' || activeSong.category === currentFilter) && searchQuery === '') {
+                    setTimeout(() => {
+                        const activeEl = playlistContainer.querySelector('.active-song');
+                        if (activeEl) {
+                            activeEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }
+                    }, 50);
+                }
+            }
+        }
+
+        function shareSong() {
+            if (currentSongIndex === -1) return;
+            const song = songs[currentSongIndex];
+            
+            let intro = "¡Hola! 💖 Estaba escuchando la Rockola UCN y esta canción me recordó a ti:";
+            if (song.category === 'amistad') intro = "¡Hola! 🤝 Quería aprovechar para darte las gracias por tu maravillosa amistad con esta canción:";
+            if (song.category === 'romanticas') intro = "¡El romance está en el aire! 💘 Escucha esta joya musical que quise dedicarte hoy:";
+            if (song.category === 'bailable') intro = "¡Levántate y baila! 💃🕺 Te dedico este temazo para llenarte de buena energía:";
+            if (song.category === 'clasicos') intro = "📻 Hay clásicos que son como abrazos al alma, te dedico este con mucho cariño:";
+
+            // Si es un audio directo compartimos la página principal en vez de youtube
+            const linkToShare = song.audioUrl ? window.location.href : `https://www.youtube.com/watch?v=${song.ytId}`;
+            const text = `${intro}\n\n🎵 *${song.title.replace(' (Video Letra)', '').replace(' (Audio Oficial)', '')}* - ${song.artist}\n\n¡Feliz mes del Amor y la Amistad! ✨\n\nEscúchala aquí 👇\n${linkToShare}`;
+            
+            const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
+            window.open(whatsappUrl, '_blank');
+        }
+
+        btnPlayPause.addEventListener('click', togglePlayPause);
+        btnNext.addEventListener('click', playNextSong);
+        btnPrev.addEventListener('click', playPrevSong);
+        btnShuffle.addEventListener('click', toggleShuffle);
+        btnLoop.addEventListener('click', toggleLoop);
+        btnShare.addEventListener('click', shareSong);
+
+        searchInput.addEventListener('input', (e) => {
+            searchQuery = e.target.value;
+            renderPlaylist();
+        });
+
+        filterBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                filterBtns.forEach(b => {
+                    b.classList.remove('bg-rose-500', 'text-white', 'shadow-md', 'active');
+                    b.classList.add('bg-white/80', 'text-gray-600');
+                });
+                e.target.classList.remove('bg-white/80', 'text-gray-600');
+                e.target.classList.add('bg-rose-500', 'text-white', 'shadow-md', 'active');
+                
+                currentFilter = e.target.getAttribute('data-filter');
+                renderPlaylist();
+            });
+        });
+
+        renderPlaylist();
+
+        // --- FONDO 3D ---
+        function init3DBackground() {
+            const container = document.getElementById('canvas-container');
+            const scene = new THREE.Scene();
+            scene.fog = new THREE.FogExp2(0xffe6ea, 0.03);
+
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.z = 25;
+
+            const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); 
+            container.appendChild(renderer.domElement);
+
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
+            
+            const directionalLight = new THREE.DirectionalLight(0xffb6c1, 0.8);
+            directionalLight.position.set(15, 20, 10);
+            scene.add(directionalLight);
+
+            const pointLight = new THREE.PointLight(0xff4766, 1.2, 50);
+            pointLight.position.set(0, -5, 10);
+            scene.add(pointLight);
+
+            function createHeartShape() {
+                const x = 0, y = 0;
+                const shape = new THREE.Shape();
+                shape.moveTo(x + 5, y + 5);
+                shape.bezierCurveTo(x + 5, y + 5, x + 4, y, x, y);
+                shape.bezierCurveTo(x - 6, y, x - 6, y + 7, x - 6, y + 7);
+                shape.bezierCurveTo(x - 6, y + 11, x - 3, y + 15.4, x + 5, y + 19);
+                shape.bezierCurveTo(x + 12, y + 15.4, x + 16, y + 11, x + 16, y + 7);
+                shape.bezierCurveTo(x + 16, y + 7, x + 16, y, x + 10, y);
+                shape.bezierCurveTo(x + 7, y, x + 5, y + 5, x + 5, y + 5);
+                return shape;
+            }
+
+            const heartGeometry = new THREE.ExtrudeGeometry(createHeartShape(), { 
+                depth: 1.5, bevelEnabled: true, bevelSegments: 3, steps: 2, bevelSize: 0.5, bevelThickness: 0.5 
+            });
+            heartGeometry.computeBoundingBox();
+            heartGeometry.translate(
+                -0.5 * (heartGeometry.boundingBox.max.x - heartGeometry.boundingBox.min.x),
+                -0.5 * (heartGeometry.boundingBox.max.y - heartGeometry.boundingBox.min.y), 0
+            );
+            heartGeometry.rotateZ(Math.PI);
+            heartGeometry.scale(0.08, 0.08, 0.08);
+
+            const heartMaterial = new THREE.MeshPhysicalMaterial({ 
+                color: 0xff4766, 
+                metalness: 0.1,
+                roughness: 0.2,
+                transparent: true, 
+                opacity: 0.7,
+                transmission: 0.3,
+                clearcoat: 1.0
+            });
+
+            const floatingObjects = [];
+            
+            for (let i = 0; i < 35; i++) {
+                const heart = new THREE.Mesh(heartGeometry, heartMaterial);
+                heart.position.set(
+                    (Math.random() - 0.5) * 60, 
+                    (Math.random() - 0.5) * 60, 
+                    (Math.random() - 0.5) * 40 - 10
+                );
+                heart.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, 0);
+                const scale = Math.random() * 0.4 + 0.3;
+                heart.scale.set(scale, scale, scale);
+                
+                heart.userData = { 
+                    speedY: Math.random() * 0.03 + 0.01, 
+                    speedRotX: (Math.random() - 0.5) * 0.02,
+                    speedRotY: (Math.random() - 0.5) * 0.02,
+                    wobbleSpeed: Math.random() * 0.05,
+                    wobbleAngle: Math.random() * Math.PI * 2
+                };
+                
+                scene.add(heart);
+                floatingObjects.push(heart);
+            }
+
+            const sphereGeometry = new THREE.SphereGeometry(0.5, 16, 16);
+            const sphereMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.4 });
+            for(let i = 0; i < 40; i++) {
+                const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+                sphere.position.set(
+                    (Math.random() - 0.5) * 60, 
+                    (Math.random() - 0.5) * 60, 
+                    (Math.random() - 0.5) * 30 - 5
+                );
+                const scale = Math.random() * 1.5 + 0.2;
+                sphere.scale.set(scale, scale, scale);
+                sphere.userData = { 
+                    speedY: Math.random() * 0.05 + 0.02,
+                    wobbleSpeed: 0, wobbleAngle: 0, speedRotX: 0, speedRotY: 0
+                };
+                scene.add(sphere);
+                floatingObjects.push(sphere);
+            }
+
+            function animate() {
+                requestAnimationFrame(animate);
+
+                floatingObjects.forEach(obj => {
+                    obj.position.y += obj.userData.speedY;
+                    obj.rotation.x += obj.userData.speedRotX;
+                    obj.rotation.y += obj.userData.speedRotY;
+                    obj.userData.wobbleAngle += obj.userData.wobbleSpeed;
+                    obj.position.x += Math.sin(obj.userData.wobbleAngle) * 0.03;
+
+                    if (obj.position.y > 35) {
+                        obj.position.y = -35;
+                        obj.position.x = (Math.random() - 0.5) * 60;
+                    }
+                });
+
+                camera.position.x += (mouseX * 5 - camera.position.x) * 0.05;
+                camera.position.y += (-mouseY * 5 - camera.position.y) * 0.05;
+                camera.lookAt(scene.position);
+
+                renderer.render(scene, camera);
+            }
+
+            let mouseX = 0;
+            let mouseY = 0;
+            document.addEventListener('mousemove', (event) => {
+                mouseX = (event.clientX / window.innerWidth) * 2 - 1;
+                mouseY = (event.clientY / window.innerHeight) * 2 - 1;
+            });
+
+            animate();
+
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        }
+
+        window.onload = init3DBackground;
+    </script>
+</body>
+</html>
